@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLVM-Whitebox — Documentation</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1c1f24;
+    --fg-dim: #5b636e;
+    --rule: #e2e5ea;
+    --code-bg: #f6f7f9;
+    --code-fg: #1c1f24;
+    --accent: #1f6feb;
+    --warn-bg: #fff8e6;
+    --warn-rule: #e0b44a;
+    --note-bg: #eef4ff;
+    --note-rule: #7aa2e3;
+    --add: #1f7a33;
+    --del: #a8352c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15181d;
+      --fg: #dfe3e8;
+      --fg-dim: #969da8;
+      --rule: #2b3038;
+      --code-bg: #1d2127;
+      --code-fg: #dfe3e8;
+      --accent: #6aa3f5;
+      --warn-bg: #2a2314;
+      --warn-rule: #7d6520;
+      --note-bg: #182232;
+      --note-rule: #3c5e94;
+      --add: #5fbf72;
+      --del: #e0776c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15181d; --fg: #dfe3e8; --fg-dim: #969da8; --rule: #2b3038;
+    --code-bg: #1d2127; --code-fg: #dfe3e8; --accent: #6aa3f5;
+    --warn-bg: #2a2314; --warn-rule: #7d6520; --note-bg: #182232;
+    --note-rule: #3c5e94; --add: #5fbf72; --del: #e0776c;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --fg: #1c1f24; --fg-dim: #5b636e; --rule: #e2e5ea;
+    --code-bg: #f6f7f9; --code-fg: #1c1f24; --accent: #1f6feb;
+    --warn-bg: #fff8e6; --warn-rule: #e0b44a; --note-bg: #eef4ff;
+    --note-rule: #7aa2e3; --add: #1f7a33; --del: #a8352c;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+  }
+  .wrap { display: flex; align-items: flex-start; max-width: 1240px; margin: 0 auto; }
+  nav {
+    position: sticky; top: 0; flex: 0 0 250px; max-height: 100vh;
+    overflow-y: auto; padding: 2rem 1rem 2rem 1.5rem; font-size: 13.5px;
+    border-right: 1px solid var(--rule); box-sizing: border-box;
+  }
+  nav h2 { font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+           color: var(--fg-dim); margin: 1.4rem 0 .4rem; }
+  nav h2:first-child { margin-top: 0; }
+  nav a { display: block; color: var(--fg-dim); text-decoration: none;
+          padding: 2.5px 0; }
+  nav a:hover { color: var(--accent); }
+  nav a.sub { padding-left: .85rem; font-size: 12.5px; }
+  main { flex: 1 1 auto; min-width: 0; padding: 2rem 2rem 6rem; }
+
+  h1 { font-size: 1.95rem; line-height: 1.25; margin: 0 0 .3rem; letter-spacing: -.01em; }
+  .tagline { color: var(--fg-dim); font-size: 1.05rem; margin: 0 0 2rem; }
+  h2 { font-size: 1.4rem; margin: 3rem 0 .8rem; padding-bottom: .3rem;
+       border-bottom: 1px solid var(--rule); letter-spacing: -.01em; }
+  h3 { font-size: 1.1rem; margin: 2rem 0 .5rem; }
+  h4 { font-size: .95rem; margin: 1.5rem 0 .4rem; color: var(--fg-dim);
+       text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  p, li { max-width: 74ch; }
+  a { color: var(--accent); }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .875em; background: var(--code-bg); padding: .12em .35em;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-fg); padding: .85rem 1rem;
+    border-radius: 6px; border: 1px solid var(--rule);
+    overflow-x: auto; font-size: 13px; line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .tbl-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: .8rem 0; }
+  th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--rule);
+           vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+       color: var(--fg-dim); font-weight: 600; }
+  td code { white-space: nowrap; }
+  aside {
+    border-left: 3px solid var(--note-rule); background: var(--note-bg);
+    padding: .7rem 1rem; border-radius: 0 5px 5px 0; margin: 1.1rem 0;
+    font-size: 14.5px;
+  }
+  aside.warn { border-left-color: var(--warn-rule); background: var(--warn-bg); }
+  aside p { margin: .3rem 0; max-width: 70ch; }
+  aside .lbl { font-weight: 700; font-size: 11.5px; letter-spacing: .07em;
+               text-transform: uppercase; display: block; margin-bottom: .15rem; }
+  .flow { overflow-x: auto; margin: 1.2rem 0; }
+  .flow pre { display: inline-block; min-width: 100%; box-sizing: border-box; }
+  .add { color: var(--add); }
+  .del { color: var(--del); }
+  .meta { color: var(--fg-dim); font-size: 13.5px; }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 3rem 0 1.5rem; }
+  @media (max-width: 860px) {
+    .wrap { display: block; }
+    nav { position: static; max-height: none; border-right: 0;
+          border-bottom: 1px solid var(--rule); flex-basis: auto; width: 100%;
+          padding: 1.5rem; }
+    main { padding: 1.5rem 1.25rem 4rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav>
+  <h2>Overview</h2>
+  <a href="#what">What it is</a>
+  <a href="#vs-ce">Relation to Compiler Explorer</a>
+  <a href="#status">Status</a>
+  <a href="#install">Requirements &amp; build</a>
+
+  <h2>Usage</h2>
+  <a href="#quickstart">Quick start</a>
+  <a href="#ui-cli">UI command line</a>
+  <a href="#ui-output">Output folders &amp; cache</a>
+  <a href="#pd-cli">pass-diff command line</a>
+  <a href="#walkthrough">Worked example</a>
+
+  <h2>Deep dive</h2>
+  <a href="#arch">Architecture &amp; data flow</a>
+  <a href="#fidelity">The fidelity problem</a>
+  <a href="#comp-ui" >Component: UI.py</a>
+  <a href="#ui-folders" class="sub">Output folder</a>
+  <a href="#ui-compile" class="sub">Compile stage</a>
+  <a href="#ui-wiring" class="sub">pass-diff wiring</a>
+  <a href="#ui-diff" class="sub">Diff rendering</a>
+  <a href="#ui-demangle" class="sub">Demangling</a>
+  <a href="#ui-widgets" class="sub">Widget layout</a>
+  <a href="#comp-pd">Component: pass-diff</a>
+  <a href="#pd-snapshot" class="sub">IR snapshots</a>
+  <a href="#pd-tracker" class="sub">PassRunTracker</a>
+  <a href="#pd-subcmd" class="sub">list-passes &amp; show-diff</a>
+  <a href="#pd-tm" class="sub">TargetMachine</a>
+  <a href="#pd-main" class="sub">main &amp; arg parsing</a>
+
+  <h2>Reference</h2>
+  <a href="#files">File map</a>
+  <a href="#rough">Rough edges</a>
+</nav>
+
+<main>
+
+<h1>LLVM-Whitebox</h1>
+<p class="tagline">Making LLVM optimization passes and the IR changes they cause visible, on demand.</p>
+
+<h2 id="what">What it is</h2>
+
+<p>You hand the tool a source file and the compiler flags you would normally use.
+It gives you five panels: your source, the final assembly, the ordered list of
+the optimization passes that ran on a function you pick — with the ones that
+actually changed the IR highlighted — and, for whichever pass you click, a
+side-by-side diff of the IR before and after it.</p>
+
+<p>The questions it is built to answer are <em>"why didn't that optimization
+fire?"</em> and <em>"which pass broke this?"</em>.</p>
+
+<p>There are two programs. <code>pass-diff</code> is a C++ CLI built directly on
+LLVM's <code>PassInstrumentationCallbacks</code> API; it is the part that observes
+passes and produces IR. <code>UI.py</code> is a PySide6 desktop app that drives
+clang, drives <code>pass-diff</code>, and renders the result. Each is usable
+without the other — <code>pass-diff</code> is a perfectly good standalone tool.</p>
+
+<h2 id="vs-ce">Relation to Compiler Explorer</h2>
+
+<p>Compiler Explorer is the tool people reach for to explore compiler behaviour
+interactively: paste a snippet, switch compilers and versions, see the output
+immediately. It is built for playing around, and it is good at it.</p>
+
+<p>This project is aimed at a different job — debugging the compilation of an
+actual application, with its real flags, where what you need is a specific answer
+about a specific pass rather than a broad survey. Two concrete consequences
+follow from that difference in purpose.</p>
+
+<p><strong>IR is produced lazily.</strong> Nothing dumps IR at every pass up front.
+<code>list-passes</code> compares before/after snapshots only to decide
+<em>whether</em> each pass changed anything, and discards the text. The IR for a
+diff is generated only for the one pass you clicked. That is what keeps a long
+compilation workable: finding one diff does not require writing out hundreds of
+megabytes of dumps first.</p>
+
+<p><strong>Whole projects are the target.</strong> The intended end state is
+pointing the tool at a real project's build and investigating one file or one
+function across the entire compilation. Tracking file and function identity through
+the pipeline is the bulk of that work and is <strong>not implemented</strong>.
+Today the tool handles one translation unit at a time.</p>
+
+<h2 id="status">Status</h2>
+
+<p>Prototype. One C++ translation unit, desktop UI. It works end to end and the
+pass/IR data it reports is faithful to a real compile (see
+<a href="#fidelity">the fidelity problem</a>), but
+there is no project-level build integration and no source-line ↔ IR mapping.
+Results are kept in an <a href="#ui-output">output folder</a>, so reopening an
+earlier run, or clicking a pass a second time, costs nothing.</p>
+
+<h2 id="install">Requirements &amp; build</h2>
+
+<p>Step-by-step instructions, including per-distribution LLVM packages and
+troubleshooting, are in <a href="../INSTALL.md"><code>INSTALL.md</code></a>. In
+short:</p>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Dependency</th><th>Notes</th></tr>
+  <tr><td>LLVM ≥ 18 + clang of the same version</td>
+      <td>A distribution package (e.g. <code>llvm-18-dev</code> + <code>clang-18</code>) or a self-compiled, installed LLVM with clang. Must ship <code>LLVMConfig.cmake</code> so <code>find_package(LLVM REQUIRED CONFIG)</code> resolves. Tested with LLVM 18.1 (Ubuntu package) and 23.0.0git (self-built).</td></tr>
+  <tr><td>CMake ≥ 3.20</td><td>Declared in <code>CMakeLists.txt</code>.</td></tr>
+  <tr><td>C++17 compiler</td><td><code>target_compile_features(... cxx_std_17)</code>.</td></tr>
+  <tr><td>Python 3 + PySide6</td><td><code>ui/requirements.txt</code>. Developed with Python 3.12 and PySide6 6.11 and 6.12.</td></tr>
+</table>
+</div>
+
+<h4>Build</h4>
+<pre><code>cd pass-diff
+cmake -S . -B build -DLLVM_DIR=&lt;llvm prefix&gt;/lib/cmake/llvm
+cmake --build build
+# optional: cmake --install build --prefix $HOME/.local</code></pre>
+
+<p>The build adapts to the LLVM it finds: it links the single shared
+<code>libLLVM</code> if that LLVM was built that way (typical for distribution
+packages), otherwise the individual component libraries; it adds
+<code>-fno-rtti</code> if LLVM was built without RTTI; it rejects LLVM older than
+18; and it builds <code>pass-diff</code> as <code>Release</code> by default.</p>
+
+<h4>Python environment</h4>
+<pre><code>python3 -m venv ui/.venv          # in the repository root
+ui/.venv/bin/pip install -r ui/requirements.txt</code></pre>
+
+<p><code>UI_run.sh</code> activates <code>$VENV</code> if set, else
+<code>ui/.venv</code> if it exists, else nothing.</p>
+
+<h4>Which clang: the one of pass-diff's LLVM</h4>
+
+<p>clang and <code>pass-diff</code> must come from the same LLVM, or the pipeline
+string and the <code>.ll</code> may not parse. So only <code>pass-diff</code> is
+chosen, and clang follows from it. CMake records the LLVM version and its tools
+folder (<code>LLVM_TOOLS_BINARY_DIR</code>) in the binary,
+<code>pass-diff toolchain-info</code> prints them, and the UI takes
+<code>clang++</code> and <code>llvm-cxxfilt</code> from that folder. Which
+<code>pass-diff</code>: <code>--pass-diff PATH</code>, else (with
+<code>--cache</code>) the one of that run, else <code>pass-diff</code> on
+<code>PATH</code>, else <code>pass-diff/build/pass-diff</code>.</p>
+
+<aside>
+  <span class="lbl">Release vs Debug LLVM</span>
+  <p>With several LLVMs, build one folder per LLVM (e.g. <code>build</code> and
+  <code>build-debug</code>) and pick with <code>--pass-diff</code>. A release
+  clang's C++ frontend is about 37× faster than a debug one (~28 s → ~1 s on a
+  coroutine-heavy C++20 file). A debug build gives you LLVM's assertions and the
+  <code>verify</code> passes in the pipeline; a release clang drops those (it
+  passes <code>-disable-llvm-verifier</code>), so its pipeline shows one
+  <code>VerifierPass</code> fewer.</p>
+</aside>
+
+<aside class="warn">
+  <span class="lbl">Gotcha</span>
+  <p>If CMake complains about a mismatched cache directory — which happens after
+  the repository or a build folder is moved — reconfigure with
+  <code>cmake --fresh -S . -B build -DLLVM_DIR=...</code>. The CMake cache stores
+  absolute paths.</p>
+</aside>
+
+<h2 id="quickstart">Quick start</h2>
+
+<pre><code># build the C++ tool (see INSTALL.md for LLVM_DIR)
+cd pass-diff
+cmake -S . -B build -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm
+cmake --build build
+
+# Python environment, in the repository root
+cd .. &amp;&amp; python3 -m venv ui/.venv &amp;&amp; ui/.venv/bin/pip install -r ui/requirements.txt
+
+# launch the UI on the bundled sample
+ui/UI_run.sh</code></pre>
+
+<p>With no arguments the UI opens <code>test/src/hello_world.cpp</code>.
+Pick a function in the dropdown above the pass list; passes that changed its IR
+have a blue background. Click one to compute and show its diff. The terminal
+prints which <code>pass-diff</code> and clang are used and the output folder the
+results went to.</p>
+
+<h2 id="ui-cli">UI command line</h2>
+
+<p><code>UI_run.sh</code> activates the Python environment and forwards every argument to
+<code>UI.py</code>. The argument list is split at the first bare <code>--</code>:
+everything before it belongs to the tool, everything after it is handed to clang
+untouched. All examples run from the repository root.</p>
+
+<pre><code>ui/UI_run.sh [--code FILE] [--output DIR | --cache DIR] [--no-overwrite]
+              [--pass-diff PATH] [--verbose] [-- CLANG_FLAGS...]</code></pre>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Flag</th><th>Meaning</th></tr>
+  <tr><td><code>--code FILE</code></td>
+      <td>Source file to analyze. C++ only. Defaults to <code>test/src/hello_world.cpp</code> relative to <code>UI.py</code>.</td></tr>
+  <tr><td><code>--output DIR</code></td>
+      <td>Output folder for this run, created if missing. Defaults to <code>tmp/&lt;file&gt;_&lt;YYYY-MM-DD_HH-MM-SS&gt;</code>. See <a href="#ui-output">output folders</a>.</td></tr>
+  <tr><td><code>--cache DIR</code></td>
+      <td>Reopen the output folder of an earlier run: its last used source version, with its last used flags and <code>pass-diff</code> unless new ones are given. Cannot be combined with <code>--code</code> or <code>--output</code> (exit code 2).</td></tr>
+  <tr><td><code>--no-overwrite</code></td>
+      <td>A changed source or changed settings get a new <code>src-N</code> / <code>cfg-N</code> folder instead of overwriting the last used one.</td></tr>
+  <tr><td><code>--pass-diff PATH</code></td>
+      <td>The <code>pass-diff</code> binary to use; <code>clang++</code> and <code>llvm-cxxfilt</code> come from the LLVM it was built against. Default: with <code>--cache</code> the one of that run, else <code>pass-diff</code> on <code>PATH</code>, else <code>pass-diff/build/pass-diff</code>.</td></tr>
+  <tr><td><code>--verbose</code></td>
+      <td>Print every clang and <code>pass-diff</code> command before running it.</td></tr>
+  <tr><td><code>-- ...</code></td>
+      <td>Everything after this goes to <code>clang++</code> verbatim, and transitively determines the pass pipeline that gets replayed.</td></tr>
+</table>
+</div>
+
+<h4>Examples</h4>
+<pre><code># bundled sample, clang defaults
+ui/UI_run.sh
+
+# a specific file at -O3
+ui/UI_run.sh --code test/src/hello_world.cpp -- -O3
+
+# compare what changes between optimization levels: run twice
+ui/UI_run.sh --code test/src/hello_world.cpp -- -O1
+ui/UI_run.sh --code test/src/hello_world.cpp -- -O3
+
+# target-specific cost models reach the passes through the IR
+ui/UI_run.sh --code mycode.cpp -- -O3 -march=znver3
+
+# forward a backend knob, as you would to clang
+ui/UI_run.sh --code mycode.cpp -- -O3 -mllvm -unroll-threshold=1000
+
+# AT&amp;T instead of the default Intel assembly syntax
+ui/UI_run.sh --code mycode.cpp -- -O3 -masm=att
+
+# use another LLVM, e.g. a debug build
+ui/UI_run.sh --code mycode.cpp --pass-diff pass-diff/build-debug/pass-diff -- -O3
+
+# reopen an earlier run without recompiling
+ui/UI_run.sh --cache tmp/hello_world_&lt;timestamp&gt;</code></pre>
+
+<aside>
+  <span class="lbl">Note</span>
+  <p>The flags after <code>--</code> are used for all three clang invocations —
+  the starting IR, the assembly, and the pipeline query — so every panel in the
+  window describes the same compile. Changing them changes which passes exist at
+  all, which is usually the point.</p>
+  <p>On top of your flags the UI adds a few that do not change the compile:
+  <code>-fno-discard-value-names</code> for the IR (a release clang would otherwise
+  print <code>%0</code> instead of <code>%a.addr</code>),
+  <code>-masm=intel</code> for the assembly, placed <em>before</em> your flags so
+  a <code>-masm=att</code> of yours wins (non-x86 targets ignore it), and
+  <code>-Wno-unused-command-line-argument</code> for the two calls on the
+  <code>.ll</code>.</p>
+</aside>
+
+<h2 id="ui-output">Output folders &amp; cache</h2>
+
+<p>Every run writes its results into an output folder. Nothing is written next to
+the source file.</p>
+
+<pre><code>tmp/&lt;file&gt;_&lt;YYYY-MM-DD_HH-MM-SS&gt;/   (default; or --output DIR)
+  session.json          original source path, last used src-N / cfg-N
+  src-N/                one per version of the source
+    &lt;file&gt;.cpp          copy of that version — this copy is what gets compiled
+    source.json         sha256 of the content
+    cfg-N/              one per settings (compiler flags + pass-diff)
+      config.json       flags, pass-diff path and LLVM version, clang path and version
+      &lt;file&gt;.ll  &lt;file&gt;.s  pipeline.txt  passes.txt
+      diffs/fK_rN.txt   show-diff output, saved on the first click</code></pre>
+
+<ul>
+  <li><strong>Reuse.</strong> A <code>cfg-N</code> holding the <code>.ll</code>,
+  <code>.s</code>, <code>pipeline.txt</code> and <code>passes.txt</code> is
+  complete: the UI loads it and calls neither clang nor <code>pass-diff</code>.
+  <code>passes.txt</code> is written last, so a run that crashed half way is not
+  mistaken for a complete one.</li>
+  <li><strong>Diff cache.</strong> The first click on a pass saves
+  <code>show-diff</code>'s raw output to <code>diffs/fK_rN.txt</code>
+  (<code>K</code>: the function's position in the dropdown, <code>N</code>: the
+  run's position in its list); later clicks, also in later sessions, read it.
+  Numbers instead of names because mangled names can exceed the 255-byte file name
+  limit.</li>
+  <li><strong>Includes.</strong> The copy is compiled with
+  <code>-iquote &lt;folder of the original&gt;</code>, so
+  <code>#include "x.h"</code> next to the original still resolves. Headers are
+  not copied, so they are not versioned.</li>
+  <li><strong>Overwriting (default).</strong> Rerunning into the same folder with
+  a changed source overwrites the last used <code>src-N</code> (and deletes its
+  <code>cfg-*</code>); changed flags or <code>pass-diff</code> (path or LLVM version) overwrite the last used
+  <code>cfg-N</code>.</li>
+  <li><strong><code>--no-overwrite</code>.</strong> Changes get a new
+  <code>src-N</code> / <code>cfg-N</code> instead, so earlier versions stay.</li>
+  <li>Either way, an existing <code>src-N</code> with the same content or
+  <code>cfg-N</code> with the same settings is reused, e.g. after undoing an
+  edit.</li>
+</ul>
+
+<p><code>--cache DIR</code> needs no <code>--code</code>: it reopens the last used
+<code>src-N</code> of <code>DIR</code> — the copy, even if the original has changed
+since. Flags and <code>pass-diff</code> come from the last used <code>cfg-N</code>,
+each unless given: flags after <code>--</code> or <code>--pass-diff</code> select
+the matching <code>cfg-N</code>, computing it if it does not exist.</p>
+
+<aside class="warn">
+  <span class="lbl">Old output folders</span>
+  <p>Folders written before <code>--pass-diff</code> existed have no
+  <code>pass_diff</code> in their <code>config.json</code>. <code>--cache</code>
+  stops with a warning for them; start a new run with <code>--code</code>.</p>
+</aside>
+
+<h2 id="pd-cli">pass-diff command line</h2>
+
+<p><code>pass-diff</code> takes LLVM IR (<code>.ll</code>), not C++. It has two
+subcommands for that, plus <code>toolchain-info</code>.</p>
+
+<pre><code>pass-diff list-passes &lt;input.ll&gt; [--pipeline &lt;spec&gt;] [--mllvm &lt;opt&gt;]...
+pass-diff show-diff   &lt;input.ll&gt; &lt;Function&gt; &lt;N&gt; [--pipeline &lt;spec&gt;] [--mllvm &lt;opt&gt;]...
+pass-diff toolchain-info</code></pre>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Argument</th><th>Meaning</th></tr>
+  <tr><td><code>list-passes</code></td>
+      <td>Runs the pipeline and prints one tab-separated line per pass run, in execution order: <code>&lt;Function&gt;\t&lt;Pass&gt;\tdid changes|did no changes</code>. Module passes are reported under <code>&lt;Globals&gt;</code>.</td></tr>
+  <tr><td><code>show-diff</code></td>
+      <td>Runs the pipeline and prints the IR before and after one run.</td></tr>
+  <tr><td><code>toolchain-info</code></td>
+      <td>Prints <code>llvm-version &lt;version&gt;</code> and <code>tools-dir &lt;folder&gt;</code>: the LLVM <code>pass-diff</code> was built against and that LLVM's tools folder, where the UI takes <code>clang++</code> from.</td></tr>
+  <tr><td><code>&lt;Function&gt;</code></td>
+      <td>A function name exactly as in the first column of <code>list-passes</code> (mangled), or <code>&lt;Globals&gt;</code>.</td></tr>
+  <tr><td><code>&lt;N&gt;</code></td>
+      <td>1-based position of the run in that function's list, i.e. among the <code>list-passes</code> lines with that first column.</td></tr>
+  <tr><td><code>--pipeline &lt;spec&gt;</code></td>
+      <td>Any string <code>PassBuilder::parsePassPipeline</code> accepts. Defaults to <code>default&lt;O3&gt;</code>. For fidelity, pass clang's own printed pipeline.</td></tr>
+  <tr><td><code>--mllvm &lt;opt&gt;</code></td>
+      <td>Forward one LLVM backend option, as clang's <code>-mllvm</code> does. Repeatable.</td></tr>
+</table>
+</div>
+
+<h4>Examples</h4>
+<pre><code># get IR to work on, with no passes applied yet
+clang++ -O3 -Xclang -disable-llvm-passes -S -emit-llvm hello_world.cpp -o hw.ll
+
+# which passes ran, and which did something
+pass-diff list-passes hw.ll
+
+# only the ones that changed the IR
+pass-diff list-passes hw.ll | grep 'did changes$'
+
+# the runs on add(int, int), numbered as show-diff numbers them
+pass-diff list-passes hw.ll | grep -P '^_Z3addii\t' | cat -n
+
+# inspect the 4th run on add(int, int)
+pass-diff show-diff hw.ll _Z3addii 4
+
+# a module pass
+pass-diff show-diff hw.ll '&lt;Globals&gt;' 4
+
+# a different optimization level
+pass-diff list-passes hw.ll --pipeline 'default&lt;O1&gt;'
+
+# a hand-built pipeline, to isolate one transform
+pass-diff show-diff hw.ll _Z3addii 1 --pipeline 'function(sroa)'
+
+# replay clang's real pipeline (what the UI does)
+PIPE=$(clang++ -O3 -Wno-unused-command-line-argument -mllvm -print-pipeline-passes -S hw.ll -o /dev/null)
+pass-diff list-passes hw.ll --pipeline "$PIPE"</code></pre>
+
+<aside class="warn">
+  <span class="lbl">Quoting</span>
+  <p>Real pipeline strings are several kilobytes of <code>&lt;</code>,
+  <code>&gt;</code>, <code>;</code>, <code>(</code> and <code>)</code>. Always
+  quote them. This is also why <code>UI.py</code> builds an argv list and never
+  uses <code>shell=True</code> — a shell would read those characters as
+  redirections and subshells.</p>
+</aside>
+
+<h2 id="walkthrough">Worked example</h2>
+
+<p>Start from the bundled sample, which has an <code>add</code> function whose
+parameters clang initially spills to stack slots:</p>
+
+<pre><code>int add(int a, int b) { return a + b; }</code></pre>
+
+<p>Emit the pre-optimization IR and list the passes:</p>
+
+<pre><code>$ clang++ -O3 -fno-discard-value-names -Xclang -disable-llvm-passes -S -emit-llvm \
+      test/src/hello_world.cpp -o hw.ll
+
+$ pass-diff list-passes hw.ll
+# Executed Passes and if they changed IR (pipeline: default&lt;O3&gt;)
+&lt;Globals&gt;  MemProfRemoveInfo          did no changes
+&lt;Globals&gt;  Annotation2MetadataPass    did no changes
+&lt;Globals&gt;  ForceFunctionAttrsPass     did no changes
+&lt;Globals&gt;  InferFunctionAttrsPass     did changes
+&lt;Globals&gt;  CoroEarlyPass              did no changes
+_Z3addii   EntryExitInstrumenterPass  did no changes
+_Z3addii   LowerExpectIntrinsicPass   did no changes
+_Z3addii   SimplifyCFGPass            did no changes
+_Z3addii   SROAPass                   did changes
+...</code></pre>
+
+<p>(Tabs shown as columns.) That is 347 runs for this three-function file — 32 on
+<code>&lt;Globals&gt;</code> and 105 on each function — which is a decent
+illustration of why dumping IR for all of them up front is the wrong default.</p>
+
+<p><code>SROAPass</code> is the 4th run on <code>_Z3addii</code> and reports a
+change, so ask what it did:</p>
+
+<pre><code>$ pass-diff show-diff hw.ll _Z3addii 4
+# Pipeline : default&lt;O3&gt;
+# Watching : run 4 of _Z3addii
+
+======================================================
+Pass : SROAPass
+Function: _Z3addii
+======================================================
+
+--- IR BEFORE ---
+; Function Attrs: mustprogress nounwind uwtable
+define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) #0 {
+entry:
+<span class="del">  %a.addr = alloca i32, align 4</span>
+<span class="del">  %b.addr = alloca i32, align 4</span>
+<span class="del">  store i32 %a, ptr %a.addr, align 4, !tbaa !5</span>
+<span class="del">  store i32 %b, ptr %b.addr, align 4, !tbaa !5</span>
+<span class="del">  %0 = load i32, ptr %a.addr, align 4, !tbaa !5</span>
+<span class="del">  %1 = load i32, ptr %b.addr, align 4, !tbaa !5</span>
+<span class="del">  %add = add nsw i32 %0, %1</span>
+  ret i32 %add
+}
+
++++ IR AFTER +++
+; Function Attrs: mustprogress nounwind uwtable
+define dso_local noundef i32 @_Z3addii(i32 noundef %a, i32 noundef %b) #0 {
+entry:
+<span class="add">  %add = add nsw i32 %a, %b</span>
+  ret i32 %add
+}</code></pre>
+
+<p>The two <code>alloca</code>s and four memory operations are gone. In the UI
+this is: pick <code>add(int, int)</code> in the function dropdown, click the 4th
+entry, <code>SROAPass</code>.</p>
+
+<hr>
+
+<h2 id="arch">Architecture &amp; data flow</h2>
+
+<p>The first launch for a source and settings makes three clang calls and one
+<code>pass-diff</code> call; the first click on each pass makes one more
+<code>pass-diff</code> call. Every result is written to the
+<a href="#ui-output">output folder</a> (the file names on the right below), and a
+later launch or click that finds it there makes no call at all. Only the first
+clang call parses the C++ source, which is almost all of clang's runtime; the
+assembly and the pipeline query start from its <code>.ll</code> and take well
+under a second.</p>
+
+<div class="flow">
+<pre>  src-N/source.cpp (copy) + user flags (after `--`)
+         │
+         ▼
+  clang++ -S -emit-llvm -Xclang -disable-llvm-passes
+  (the only call that runs the C++ frontend)
+         │
+         ▼
+     cfg-N/source.ll  pre-optimization IR
+         │
+         ├─────────────────────────────┬──────────────────────────────┐
+         ▼                             │                              ▼
+  clang++ -S source.ll                 │                      clang++ -mllvm
+  (flags)                              │                      -print-pipeline-passes
+         │                             │                      -S source.ll
+         ▼                             │                              ▼
+     cfg-N/source.s                    │                      cfg-N/pipeline.txt
+  "Final Assembly"                     │                      pipeline string (several
+         │                             │                      KB, fully parameterized)
+         │                             └──────────┬───────────────────┘
+         │                                        ▼
+         │                            pass-diff list-passes
+         │                              --pipeline &lt;string&gt;
+         │                              --mllvm &lt;opt&gt;...
+         │                                        │
+         │                                        ▼
+         │                            cfg-N/passes.txt
+         │                    "Function  Pass  did [no] changes" × N
+         │                                        │
+         │                                        ▼
+         │                          group by function → dropdown;
+         │                          each list item keeps its 1-based run index
+         │                                        │
+         ▼                                        ▼
+  ┌────────────────────────────────────────────────────────────────┐
+  │  Qt window                                                     │
+  │  ┌──────────────┬───────────────┐                              │
+  │  │ Source Code  │ Final Assembly│  ← collapsible top panel     │
+  │  ├──────────┬───┴──────┬────────┤                              │
+  │  │ Compiler │  Old IR  │ New IR │  ← scroll-linked diff views  │
+  │  │ Passes   │          │        │                              │
+  │  └──────────┴──────────┴────────┘                              │
+  └────────────────────────────────────────────────────────────────┘
+                     │ click the 4th run of _Z3addii (SROAPass)
+                     ▼
+         cfg-N/diffs/f2_r4.txt exists? ── yes ──┐
+                     │ no                        │
+                     ▼                           │
+         pass-diff show-diff source.ll _Z3addii 4
+           --pipeline &lt;string&gt; --mllvm &lt;opt&gt;...
+                     │  saved to diffs/f2_r4.txt │
+                     ▼                           │
+         before / after IR  ◄────────────────────┘
+                     │
+                     ▼
+         demangle (if on), then difflib.SequenceMatcher → aligned (text, tag) rows
+                     │
+                     ▼
+         render into Old IR / New IR with per-line background colors
+         + colored spans on each panel's scrollbar</pre>
+</div>
+
+<p>The consequential property of this shape: <strong>every diff costs a full
+pipeline run.</strong> <code>pass-diff</code> is stateless between invocations, so
+<code>show-diff</code> re-runs the whole pipeline from the starting IR and snapshots
+only the watched run. That is the trade being made — no up-front cost and only the
+diffs you looked at are stored, but the first click on a pass has the latency of
+one optimization pipeline. The diff cache makes every later click free; for a
+large project, where one pipeline run takes long, the first click will still
+hurt.</p>
+
+<h2 id="fidelity">The fidelity problem</h2>
+
+<p>This is the core design concern of the project, so it is worth stating plainly.
+A tool that shows you passes is useless — actively misleading — if the passes it
+shows are not the passes your build actually runs. There are three independent ways
+to get this wrong, and each is handled deliberately.</p>
+
+<h4>1. Don't reconstruct the pipeline, ask for it</h4>
+
+<p>The naive approach is to map <code>-O2</code> to <code>default&lt;O2&gt;</code>
+and call it a day. That silently diverges, because clang builds its pipeline with
+the real <code>TargetMachine</code> and a <code>PipelineTuningOptions</code> derived
+from <em>every</em> flag on the command line. So instead:</p>
+
+<pre><code>clang++ &lt;your flags&gt; -mllvm -print-pipeline-passes -S file.ll -o /dev/null</code></pre>
+
+<p>The printed string is fully parameterized — unroll thresholds,
+<code>simplifycfg</code> options, coro passes — and it round-trips through
+<code>PassBuilder::parsePassPipeline</code>, so <code>pass-diff</code> replays it
+verbatim. This has to be its own clang invocation:
+<code>-print-pipeline-passes</code> suppresses real codegen, so the
+<code>.s</code> comes out empty and it cannot be folded into the assembly call.</p>
+
+<h4>2. Don't start from -O0 IR</h4>
+
+<p>The starting IR is produced with the user's real flags plus
+<code>-Xclang -disable-llvm-passes</code>, which stops the pipeline and changes
+nothing else. Forcing <code>-O0</code> instead would be wrong twice over: it tags
+every function <code>optnone</code>, which makes optimizer passes skip them
+entirely, and it changes CodeGen-level decisions — adds <code>noinline</code>, keeps
+<code>"frame-pointer"="all"</code>, drops TBAA metadata. The result would be IR that
+no real compile ever produces.</p>
+
+<h4>3. Give the passes a real cost model</h4>
+
+<p>If <code>PassBuilder</code> gets <code>TM = nullptr</code>, then
+<code>PassRegistry.def</code> falls back to a bare <code>TargetIRAnalysis()</code> —
+a generic, target-agnostic cost model. Every pass that asks "how wide is a vector
+register?" or "what does this instruction cost?" — the loop vectorizer, the SLP
+vectorizer, the unroller, the inliner — then makes different decisions than your
+backend does. <code>pass-diff</code> therefore builds a real
+<code>TargetMachine</code>, and takes its target description <em>from the IR</em>
+rather than from its own command line. See <a href="#pd-tm">TargetMachine
+construction</a> for why that indirection is the useful part.</p>
+
+<h4>What is still approximate</h4>
+
+<p>A handful of passes read global <code>cl::opt</code> state rather than pipeline
+parameters, and the pipeline string cannot capture those. clang's
+<code>-mllvm</code> sets exactly those globals, so the UI scrapes
+<code>-mllvm</code> pairs out of your flags and re-applies them to
+<code>pass-diff</code> via its own <code>--mllvm</code>. Anything that influences
+optimization through a channel other than the pipeline string, the module, or a
+<code>cl::opt</code> is not currently accounted for.</p>
+
+<hr>
+
+<h2 id="comp-ui">Component: UI.py</h2>
+
+<p class="meta">~1250 lines, PySide6. Orchestration and presentation; contains no
+LLVM logic of its own.</p>
+
+<h3 id="ui-folders">Output folder</h3>
+
+<p>The layout is described under <a href="#ui-output">output folders &amp;
+cache</a>. The code:</p>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Function</th><th>Does</th></tr>
+  <tr><td><code>new_output_folder(source)</code></td>
+      <td>The default folder, <code>tmp/&lt;file&gt;_&lt;timestamp&gt;</code> (<code>OUTPUT_ROOT</code>).</td></tr>
+  <tr><td><code>_pick_dir(parent, prefix, last, matches, no_overwrite)</code></td>
+      <td>The shared rule for <code>src-N</code> and <code>cfg-N</code>: reuse an existing folder for which <code>matches(path)</code> is true; otherwise empty and reuse <code>last</code> (overwrite), or create the next number (<code>--no-overwrite</code>, or no last folder).</td></tr>
+  <tr><td><code>select_source_version(...)</code></td>
+      <td>Matches on the sha256 in <code>source.json</code>, copies the source, updates <code>session.json</code>. Returns the path of the copy.</td></tr>
+  <tr><td><code>select_config(...)</code></td>
+      <td>Matches on <code>{"flags", "pass_diff", "llvm_version"}</code> in <code>config.json</code>. Returns <code>(cfg_dir, complete)</code>.</td></tr>
+  <tr><td><code>find_pass_diff(explicit)</code></td>
+      <td><code>--pass-diff</code>, else <code>pass-diff</code> on <code>PATH</code>, else the default build folder; exits if it is not an executable file.</td></tr>
+  <tr><td><code>set_toolchain(pass_diff)</code></td>
+      <td>Runs <code>pass-diff toolchain-info</code> and sets the globals <code>PASS_DIFF_BIN</code>, <code>LLVM_VERSION</code> and <code>CLANG</code> (<code>clang++</code> in the reported tools folder). Exits if <code>toolchain-info</code> is not supported or <code>clang++</code> is missing there.</td></tr>
+  <tr><td><code>prepare_run(...)</code></td>
+      <td>Everything before the window exists: resolves <code>--cache</code> (source and settings from <code>session.json</code>; exits for folders whose <code>config.json</code> names no <code>pass-diff</code>), picks <code>pass-diff</code> and with it clang, selects the folders, then loads the results or computes them. Sets the module globals <code>output_path</code> and <code>run_dir</code> (the <code>cfg-N</code> in use).</td></tr>
+  <tr><td><code>write_temp_file(content, suffix)</code></td>
+      <td>Writes a uniquely named file into <code>run_dir</code>. Currently unused.</td></tr>
+</table>
+</div>
+
+<p><code>session.json</code> also records <code>cfg_of</code>, the
+<code>src-N</code> the last used <code>cfg-N</code> belongs to, so that switching
+to another source version does not overwrite a <code>cfg-N</code> of a different
+source.</p>
+
+<h3 id="ui-compile">Compile stage</h3>
+
+<p>Three functions shell out to clang, all through <code>run_cmd</code>. All of
+them take the same <code>flags</code> list, which is the user's
+post-<code>--</code> argv, and write into the <code>cfg-N</code> folder.</p>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Function</th><th>Does</th></tr>
+  <tr><td><code>run_cmd(argv, stderr)</code></td>
+      <td>Runs an argv list via <code>subprocess.run</code>. Returns
+      <code>(output, None)</code> on success, <code>(None, stderr)</code> on
+      nonzero exit. <strong>Never</strong> <code>shell=True</code> — see the
+      quoting note above. The <code>stderr</code> flag folds stderr into the
+      returned output when true.</td></tr>
+  <tr><td><code>compile_to_ir(cpp, flags, ll_path)</code></td>
+      <td><code>clang++ &lt;flags&gt; -fno-discard-value-names -Xclang -disable-llvm-passes -S -emit-llvm</code>.
+      The only call that parses C++. <code>prepare_run</code> passes the copy in
+      <code>src-N</code> and adds <code>-iquote &lt;folder of the original&gt;</code>
+      to the flags.</td></tr>
+  <tr><td><code>compile_to_asm(ll, flags, asm_path)</code></td>
+      <td><code>clang++ -masm=intel &lt;flags&gt; -Wno-unused-command-line-argument -S file.ll</code>.
+      Feeds the "Final Assembly" panel.</td></tr>
+  <tr><td><code>extract_pipeline(ll, flags)</code></td>
+      <td><code>clang++ &lt;flags&gt; -Wno-unused-command-line-argument -mllvm -print-pipeline-passes -S file.ll -o /dev/null</code>.
+      Returns the stripped pipeline string, or an error if clang printed
+      nothing.</td></tr>
+</table>
+</div>
+
+<p>Starting the last two from the <code>.ll</code> skips the C++ frontend and
+gives the same assembly and the same pipeline as starting from the
+<code>.cpp</code>. C++-only flags (<code>-I</code>, <code>-stdlib=</code>, …) are
+unused for IR input, which clang warns about; the extra <code>-W</code> flag keeps
+a user's <code>-Werror</code> from turning that into a failure. The pipeline query
+cannot be merged into the IR step either: with
+<code>-disable-llvm-passes</code> clang prints only
+<code>verify,verify,print</code> and writes an empty <code>.ll</code>.</p>
+
+<h3 id="ui-wiring">pass-diff wiring</h3>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Function</th><th>Does</th></tr>
+  <tr><td><code>extract_mllvm_opts(flags)</code></td>
+      <td>Scans the user's flags for <code>-mllvm &lt;opt&gt;</code> pairs and
+      returns the options, to be re-forwarded to <code>pass-diff</code>.</td></tr>
+  <tr><td><code>_pass_diff_argv(...)</code></td>
+      <td>Assembles the argv: binary, subcommand, <code>.ll</code> path, extras,
+      <code>--pipeline &lt;spec&gt;</code>, then one <code>--mllvm</code> pair per
+      option.</td></tr>
+  <tr><td><code>run_list_passes(...)</code></td>
+      <td>Runs <code>list-passes</code> and returns <code>(raw output, err)</code>.
+      The raw output is what <code>passes.txt</code> stores.</td></tr>
+  <tr><td><code>parse_list_passes(output)</code></td>
+      <td>Turns that output into <code>{function: [(label, changed), ...]}</code>,
+      functions and runs in pipeline order. Splits each line on tabs; comment
+      lines (<code>#</code>-prefixed) and blanks are skipped.</td></tr>
+  <tr><td><code>run_show_diff(..., cache_path)</code></td>
+      <td>Reads <code>cache_path</code> if it exists; otherwise runs
+      <code>show-diff &lt;function&gt; &lt;N&gt;</code> and saves the raw output
+      there. Returns <code>(before_ir, after_ir, err)</code>, split on the
+      <code>--- IR BEFORE ---</code> / <code>+++ IR AFTER +++</code> markers. Output
+      without them returns empty strings, which the UI shows as
+      <code>(no snapshot captured for ...)</code>.</td></tr>
+</table>
+</div>
+
+<h4>Run numbering</h4>
+
+<p>A run is addressed as (function, 1-based position in that function's list).
+Each list item stores its position in <code>Qt.UserRole</code>, and
+<code>on_pass_selected</code> passes the function and that number to
+<code>show-diff</code>. There is no text matching on pass names, so labels that
+repeat (a function pass runs many times per function) are no problem. Both
+subcommands count with the same tracker in <code>pass-diff</code>, so the numbers
+agree by construction — see <a href="#pd-tracker">PassRunTracker</a>.</p>
+
+<h3 id="ui-diff">Diff rendering</h3>
+
+<p>The diff is computed in Python, not by <code>pass-diff</code>, which only ever
+emits two blobs of IR text.</p>
+
+<p><code>build_side_by_side_diff(before, after)</code> runs
+<code>difflib.SequenceMatcher</code> over the two line lists with
+<code>autojunk=False</code> — important, since autojunk heuristically discards
+lines that appear in more than 1% of a large input, which in IR means common
+instruction patterns. It walks the opcodes and returns two equal-length lists of
+<code>(text, tag)</code> pairs, inserting <code>filler</code> rows so that row
+<em>i</em> on the left always corresponds to row <em>i</em> on the right:</p>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Tag</th><th>Meaning</th><th>Color</th></tr>
+  <tr><td><code>equal</code></td><td>Unchanged on both sides</td><td>none</td></tr>
+  <tr><td><code>delete</code></td><td>Left only</td><td>red</td></tr>
+  <tr><td><code>insert</code></td><td>Right only</td><td>green</td></tr>
+  <tr><td><code>replace</code></td><td>Present both sides, differing</td><td>green (same as insert)</td></tr>
+  <tr><td><code>filler</code></td><td>Padding to hold alignment</td><td>dark gray</td></tr>
+</table>
+</div>
+
+<p><code>render_diff_lines(edit, lines)</code> inserts one
+<code>QTextBlock</code> per row with a <code>QTextBlockFormat</code> background, so
+the highlight spans the full width rather than just the glyphs. Inserting through a
+cursor drags the viewport along, so it explicitly resets both scrollbars and the
+cursor to the top — otherwise a freshly selected pass would open mid-function.</p>
+
+<p><code>link_scrollbars(a, b)</code> cross-connects the two views'
+<code>valueChanged</code> signals in both directions, horizontally and vertically,
+which is what keeps aligned rows beside each other while you scroll. The mutual
+connection does not loop infinitely because Qt's
+<code>setValue</code> does not re-emit when the value is unchanged.</p>
+
+<p>Both IR panels use a <code>MarkerScrollBar</code>, the same class that marks
+search hits in the pass list. <code>diff_spans(lines)</code> turns each run of
+consecutive colored rows into a <code>(start, end, color)</code> span in fractions
+of the row count, and the bar paints it on its groove, at least
+<code>MARKER_HEIGHT</code> pixels tall. Each panel marks its own colors: Old IR
+shows deleted and changed rows, New IR inserted and changed rows. The bars are
+always shown, so a diff that fits on screen still has its markers.</p>
+
+<h3 id="ui-demangle">Demangling</h3>
+
+<p>The <em>Demangle</em> toolbar button (on by default) shows demangled C++ names
+in the assembly, the function dropdown and both IR panels. Not in the pass list,
+and not in the source.</p>
+
+<ul>
+  <li><code>MANGLED_NAME_RE</code> = <code>(?&lt;![\w.])_Z[\w.$]+</code> finds
+  Itanium names wherever they appear: <code>@_Z…</code>, <code>%_Z…</code>,
+  <code>$_Z…</code> comdats and <code>_Z…:</code> asm labels, but not
+  <code>.L_Z…</code>-style tokens. Clone suffixes such as <code>.resume</code>
+  are part of the match; <code>llvm-cxxfilt</code> prints them as
+  <code>(.resume)</code>.</li>
+  <li><code>demangle_names</code> sends all names not seen before to the
+  <code>llvm-cxxfilt</code> next to <code>CLANG</code> in one call and caches the result. If the
+  call fails, the tool is missing, or it returns a different number of lines, names are left as they
+  are.</li>
+  <li>It is display only. The window keeps the raw texts
+  (<code>_asm_raw</code>, <code>_ir_raw</code>, the dropdown's item data), so
+  toggling just redraws, and <code>pass-diff</code> and the cache files always see
+  mangled names. Demangled text is not valid IR any more (spaces, parentheses).</li>
+  <li>The IR is demangled <em>before</em> diffing, so the two sides line up on
+  what is actually shown.</li>
+</ul>
+
+<h3 id="ui-widgets">Widget layout</h3>
+
+<p>Three nested <code>QSplitter</code>s:</p>
+
+<pre><code>toolbar                    [Hide Code/Assembly] [Demangle]
+root_splitter (vertical)
+├── top_splitter (horizontal)     ~35% height by default
+│   ├── "Source Code"      QTextEdit (editable, but edits do nothing yet)
+│   └── "Final Assembly"   QTextEdit (read-only)
+└── bottom_splitter (horizontal)
+    ├── "Compiler Passes"
+    │   ├── FunctionComboBox    one entry per function, &lt;Globals&gt; first
+    │   ├── SearchLineEdit      + hit counter
+    │   └── QListWidget         with MarkerScrollBar and PassItemDelegate
+    ├── "Old IR"           QTextEdit (read-only, no wrap, MarkerScrollBar)
+    └── "New IR"           QTextEdit (read-only, no wrap, MarkerScrollBar)</code></pre>
+
+<p>The <code>labeled()</code> helper wraps each panel with a bold header. Checked
+toolbar buttons are orange. <em>Hide Code/Assembly</em> collapses the top panel to
+zero height and restores it to its previous size;
+<code>_save_top_size</code> tracks the last nonzero height via the
+<code>splitterMoved</code> signal, and <code>resizeEvent</code> installs the 35/65
+default on first show. Line wrapping is off in the IR views because wrapping would
+break row-for-row alignment between the two sides.</p>
+
+<p><code>FunctionComboBox</code> keeps its popup inside the pass panel (half its
+height, its full width, scrolling both ways), because a menu-style popup listing
+a few hundred mangled names would cover the screen. Items show the (possibly
+demangled) name and carry the mangled one as data; selection goes by index
+through <code>currentIndexChanged</code>.</p>
+
+<p>The pass list search highlights the matched text in every hit with
+<code>PassItemDelegate</code> and marks hits on the scrollbar, but deliberately
+does not select the hit: selecting a pass runs <code>show-diff</code>, which would
+stall for seconds per keypress.</p>
+
+<p>Selection is handled by <code>on_pass_selected</code>, connected to
+<code>currentItemChanged</code>. It takes the function from the dropdown and the
+run index from the item, builds the cache path
+<code>diffs/f&lt;K&gt;_r&lt;N&gt;.txt</code>, calls <code>run_show_diff</code>,
+and renders. Errors go into the "Old IR" panel as text rather than to a
+dialog.</p>
+
+<h4>Startup sequence</h4>
+
+<p><code>main()</code> parses the arguments (split at <code>--</code>; argparse
+rejects <code>--output</code> with <code>--cache</code>, and <code>main</code>
+rejects <code>--code</code> with <code>--cache</code>) and calls
+<code>prepare_run</code>, which bails out with a stderr message on any failure:
+pick <code>pass-diff</code> → ask it for its LLVM's tools folder and check <code>clang++</code> exists there →
+select <code>src-N</code> / <code>cfg-N</code> → if complete, load the four
+files; otherwise compile IR → assembly → query the pipeline → run
+<code>list-passes</code> → write <code>pipeline.txt</code> and
+<code>passes.txt</code>. Only then is the <code>QApplication</code> constructed
+and the window shown. So the pass list is fully populated before the window
+appears, and a broken compile produces a terminal error instead of an empty
+UI.</p>
+
+<p>Note <code>QApplication(sys.argv[:1])</code> — Qt is given only the program
+name, so it cannot try to interpret our flags or clang's as its own.</p>
+
+<hr>
+
+<h2 id="comp-pd">Component: pass-diff</h2>
+
+<p class="meta">~500 lines of C++ in <code>src/main.cpp</code>. Built on LLVM's
+<code>PassInstrumentationCallbacks</code> — it does not scrape <code>opt</code>
+output.</p>
+
+<p>Both subcommands use one callback class, <code>PassRunTracker</code>,
+registered on the instrumentation hooks; they differ only in which runs get
+snapshotted and what is printed. The pipeline is driven by
+<code>runPipeline</code>, which is
+plain new-pass-manager setup: four analysis managers,
+<code>crossRegisterProxies</code>, <code>parsePassPipeline</code>,
+<code>MPM.run</code>.</p>
+
+<h3 id="pd-snapshot">IR snapshots</h3>
+
+<p>Everything rests on turning an <code>Any IR</code> handed to a callback into
+comparable text. <code>irSnapshot</code> does this, deliberately mirroring LLVM's own
+<code>StandardInstrumentations.cpp</code> so the output lines up with what
+<code>-print-changed</code> would report.</p>
+
+<p><code>irSnapshot(Any)</code> renders the unit as text, and handles four unit
+kinds:</p>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>IR unit</th><th>Rendered as</th></tr>
+  <tr><td><code>Module *</code></td><td><code>M.print()</code></td></tr>
+  <tr><td><code>Function *</code></td><td><code>F.print()</code></td></tr>
+  <tr><td><code>LazyCallGraph::SCC *</code></td><td>Each non-declaration function in the SCC, printed in order</td></tr>
+  <tr><td><code>Loop *</code></td><td><code>printLoop()</code></td></tr>
+</table>
+</div>
+
+<aside>
+  <span class="lbl">Why the last two matter</span>
+  <p>Without explicit SCC and Loop cases, those units fall through to
+  <code>""</code>. Then every CGSCC pass (<code>InlinerPass</code>,
+  <code>CoroSplitPass</code>, <code>ArgumentPromotionPass</code>) and every Loop
+  pass (<code>LICM</code>, <code>LoopRotate</code>, <code>LoopFullUnroll</code>)
+  compares <code>"" == ""</code> and is reported as "did no changes" with empty
+  IR — silently, for exactly the passes a user is most likely to be investigating.
+  This was a real bug in an earlier iteration.</p>
+</aside>
+
+<h3 id="pd-tracker">PassRunTracker</h3>
+
+<p>The pipeline runs function by function, so the runs are organised the way
+Compiler Explorer's Opt Pipeline view does it: every pass run is attributed to the
+function it ran on.</p>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>IR unit</th><th>Reported as</th></tr>
+  <tr><td><code>Module</code></td><td>One run under the pseudo function <code>&lt;Globals&gt;</code>, showing the whole module.</td></tr>
+  <tr><td><code>Function</code></td><td>One run under that function.</td></tr>
+  <tr><td><code>LazyCallGraph::SCC</code></td><td>One run per defined function of the SCC, each with only that function's IR. Functions the pass created (e.g. <code>CoroSplitPass</code>'s <code>.resume</code> / <code>.destroy</code>) get a run with no before IR. After the pass, functions are looked up by name in the module, because the pass may have deleted one or moved it to another SCC.</td></tr>
+  <tr><td><code>Loop</code></td><td>One run under the loop's function, labelled <code>&lt;Pass&gt; on loop %&lt;name&gt;</code>, showing only the loop.</td></tr>
+</table>
+</div>
+
+<p>Three callbacks are registered:</p>
+
+<ul>
+  <li><code>BeforeNonSkippedPass</code> — push a <code>Frame</code> with the runs
+  this pass will report and their before snapshots.</li>
+  <li><code>AfterPass</code> — pop, take the after snapshots, hand each run to the
+  sink.</li>
+  <li><code>AfterPassInvalidated</code> — pop and mark the runs invalidated. No IR
+  is handed to this callback, so there is no after snapshot, but a pass that
+  invalidated the unit it ran on changed it by any reading.</li>
+</ul>
+
+<aside>
+  <span class="lbl">Why a stack and not a map</span>
+  <p>Keying before-snapshots by the IR unit's name looks natural and is wrong:
+  <strong>passes rename the thing they run on.</strong>
+  <code>LoopRotatePass</code> rewrites the loop header, which changes the loop's
+  name, so the after-lookup misses and the pass silently produces no output —
+  measured at 3 of 7 <code>LoopRotatePass</code> occurrences vanishing.
+  <code>CoroSplitPass</code> has the same problem, adding
+  <code>.resume</code>/<code>.destroy</code> functions to its SCC.</p>
+  <p>Passes nest properly, so a stack pairs before with after exactly. This is also
+  why the <code>AfterPassInvalidated</code> callback <em>must</em> pop: miss it and
+  the stack desynchronizes for every pass that follows. LLVM's own
+  <code>ChangeReporter</code> is structured the same way.</p>
+</aside>
+
+<p>The constructor takes two functions: <code>Wants(unit)</code> decides which
+runs get snapshotted, and <code>Sink(run)</code> receives each finished
+<code>PassRun</code> (<code>Unit</code>, <code>Label</code>, <code>Before</code>,
+<code>After</code>, <code>Invalidated</code>). A frame is pushed for
+<em>every</em> pass so the stack stays aligned with the after-callbacks, but runs
+that are not wanted carry empty strings.</p>
+
+<h3 id="pd-subcmd">list-passes &amp; show-diff</h3>
+
+<p><strong><code>list-passes</code></strong> wants every run and prints one line
+per run: <code>Unit\tLabel\tdid changes</code> if the run was invalidated or
+before and after differ, otherwise <code>did no changes</code>. The IR text is
+compared and discarded.</p>
+
+<p><strong><code>show-diff</code></strong> wants only the requested function, and
+counts that function's runs in the sink; the <code>N</code>-th one is printed with
+a header block (<code>Pass :</code>, <code>Function:</code>) and the two IR
+sections. An invalidated run prints
+<code>(IR unit invalidated by the pass)</code> as its after IR. That is the
+mechanism behind the laziness claim: <code>show-diff</code> walks the entire
+pipeline but serializes IR only for one function.</p>
+
+<p>Because both subcommands number runs with the same tracker — including the
+invalidated ones and the ones created by a CGSCC pass — the <code>N</code> the UI
+reads from <code>list-passes</code> always addresses the same run in
+<code>show-diff</code>.</p>
+
+<h3 id="pd-tm">TargetMachine construction</h3>
+
+<p><code>createTargetMachineForModule(M)</code> is short but carries the most
+design weight. It reads the triple from the module, looks it up in the
+<code>TargetRegistry</code>, and pulls default <code>target-cpu</code> /
+<code>target-features</code> from the first non-declaration function's
+attributes.</p>
+
+<p>The deliberate choice is taking all of this <strong>from the IR rather than from
+our own command line.</strong> clang bakes the resolved triple into the module and
+the resolved <code>target-cpu</code>/<code>target-features</code> into each
+function's attributes, and
+<code>TargetMachine::getSubtargetImpl(const Function &amp;)</code> re-reads those
+per function. So whatever <code>-march</code>, <code>-mtune</code>, or
+<code>-m&lt;feature&gt;</code> flags the user gave clang reach the cost models
+automatically, for any target, with zero flag translation on our side. The
+module-level CPU/features are only defaults for functions that happen to lack the
+attributes; per-function attributes still win.</p>
+
+<p>Both failure modes — no triple in the module, or no registered target for the
+triple — print a warning to stderr and return <code>nullptr</code>, falling back to
+the target-agnostic cost model rather than aborting. Degraded but still useful.</p>
+
+<h3 id="pd-main">main &amp; argument parsing</h3>
+
+<p><code>toolchain-info</code> is handled first: it prints
+<code>LLVM_VERSION_STRING</code> and the <code>PASS_DIFF_LLVM_TOOLS_DIR</code>
+that CMake defined from <code>LLVM_TOOLS_BINARY_DIR</code>, and exits. For the
+other two subcommands: hand-rolled argument scanning from <code>argv[3]</code> onward, recognizing
+<code>--pipeline</code>, repeated <code>--mllvm</code>, and — for
+<code>show-diff</code> — the first bare argument as the function and the second
+as the run index, which must be a positive number. Anything else is an error with
+usage. Then:</p>
+
+<ol>
+  <li><code>InitializeAllTargetInfos/Targets/TargetMCs</code> — required before any
+  <code>TargetRegistry</code> lookup can succeed.</li>
+  <li>If <code>--mllvm</code> options were given, synthesize an argv and call
+  <code>cl::ParseCommandLineOptions</code>, which is what sets the global
+  <code>cl::opt</code> values clang's <code>-mllvm</code> sets.</li>
+  <li><code>parseIRFile</code>, printing an <code>SMDiagnostic</code> and exiting
+  on failure.</li>
+  <li>Construct <code>PassInstrumentationCallbacks</code>, register
+  <code>StandardInstrumentations</code> on it (with
+  <code>DebugLogging=false</code>), then register a
+  <code>PassRunTracker</code> configured for the subcommand.</li>
+  <li>Print the <code>#</code> header lines and run the pipeline.</li>
+</ol>
+
+<p>Exit status is 0 on success, 1 on bad arguments, unparseable IR, or a pipeline
+string <code>parsePassPipeline</code> rejects. A function name or run index that
+does not exist is not an error: the run is just never printed.</p>
+
+<h4>Linked LLVM components</h4>
+
+<p>From <code>CMakeLists.txt</code>: <code>core</code>, <code>support</code>,
+<code>irreader</code>, <code>passes</code>, <code>analysis</code>,
+<code>transformutils</code>, <code>scalaropts</code>, <code>target</code>,
+<code>codegen</code>, <code>mc</code>, plus <code>AllTargetsInfos</code>,
+<code>AllTargetsDescs</code> and <code>AllTargetsCodeGens</code> — all targets, so a
+<code>TargetMachine</code> can be built for whatever triple the module carries,
+which will matter once non-host targets come into play. If the LLVM was built as
+one shared library (<code>LLVM_LINK_LLVM_DYLIB</code>, as distribution packages
+are), <code>pass-diff</code> links that single <code>LLVM</code> library
+instead.</p>
+
+<h4>LLVM versions</h4>
+
+<p>Builds against LLVM 18 and newer. Since LLVM 21 the target triple is a
+<code>Triple</code> object where it used to be a string
+(<code>Module::getTargetTriple</code>, <code>TargetRegistry::lookupTarget</code>,
+<code>Target::createTargetMachine</code>), and <code>printLoop</code> takes a
+<code>const Loop &amp;</code>. <code>main.cpp</code> handles both with
+<code>#if LLVM_VERSION_MAJOR &gt;= 21</code> and a <code>const_cast</code>.
+Tested with 18.1 and 23.0.0git.</p>
+
+<hr>
+
+<h2 id="files">File map</h2>
+
+<div class="tbl-scroll">
+<table>
+  <tr><th>Path</th><th>Role</th></tr>
+  <tr><td><code>ui/UI.py</code></td><td>The PySide6 application. Current entry point.</td></tr>
+  <tr><td><code>ui/UI_run.sh</code></td><td>Activates <code>$VENV</code> or <code>ui/.venv</code>, forwards argv to <code>UI.py</code>.</td></tr>
+  <tr><td><code>pass-diff/src/main.cpp</code></td><td>The entire C++ tool.</td></tr>
+  <tr><td><code>pass-diff/CMakeLists.txt</code></td><td>Build definition.</td></tr>
+  <tr><td><code>pass-diff/build/</code></td><td>Default build folder; the UI uses this <code>pass-diff</code> if no other is given or found on <code>PATH</code>.</td></tr>
+  <tr><td><code>ui/requirements.txt</code></td><td>Python dependencies.</td></tr>
+  <tr><td><code>INSTALL.md</code></td><td>Installation instructions.</td></tr>
+  <tr><td><code>tmp/</code></td><td>Output folders of UI runs.</td></tr>
+  <tr><td><code>test/src/</code></td><td>Samples: <code>hello_world.cpp</code>, <code>hello_opt.cpp</code>.</td></tr>
+</table>
+</div>
+
+<p>Gitignored: <code>tmp/</code>, <code>pass-diff/build/</code>,
+<code>pass-diff/build-*/</code>, <code>ui/.venv/</code>.</p>
+
+<h2 id="rough">Rough edges</h2>
+
+<p>Known and worth knowing before reading the code:</p>
+
+<ul>
+  <li><strong>The first click on a pass re-runs the pipeline.</strong> Later clicks
+  come from the diff cache. Fine at this scale; for large projects the first click
+  is what stands in the way.</li>
+  <li><strong>The pass list is eager.</strong> The first launch for a source and
+  settings costs one full pipeline run before the window appears; only the
+  per-pass IR is lazy. Later launches load it from the output folder.</li>
+  <li><strong>Settings only change by restarting.</strong> Compiler flags and
+  <code>pass-diff</code> are command-line only, and the Source panel is editable but inert:
+  edits are never recompiled.</li>
+  <li><strong>Headers are not versioned.</strong> Only the source file is copied
+  into <code>src-N</code>; included headers are read from their original
+  location, so a <code>cfg-N</code> computed before a header changed is still
+  reused.</li>
+  <li><strong>Switching function with a pass selected</strong> runs
+  <code>show-diff</code> for run 2 of the new function and shows it although no
+  row is selected; it also leaves that diff in the cache.</li>
+  <li><strong><code>write_temp_file</code> is unused.</strong> Kept for later; it
+  writes into the current <code>cfg-N</code>.</li>
+  <li><strong>Compilation errors exit to stderr</strong> rather than surfacing in
+  the UI. The <code>compile_to_ir</code>/<code>compile_to_asm</code> error paths
+  still carry <code>TODO</code> comments.</li>
+  <li><strong>No source-line ↔ IR mapping</strong>, a prerequisite for the
+  whole-project goal.</li>
+  <li><strong>Diff colors are hardcoded dark-theme</strong> RGB values in
+  <code>LINE_COLORS</code>, so they assume a dark Qt palette.</li>
+</ul>
+
+</main>
+</div>
+
+</body>
+</html>

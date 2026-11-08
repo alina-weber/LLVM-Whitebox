@@ -1,0 +1,8 @@
+pass-diff/build/
+.idea/
+test/
+tmp/
+__pycache__/
+CLAUDE.md
+pass-diff/build-*/
+.venv/
